@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
@@ -44,6 +45,13 @@ class TrainSerializer(serializers.ModelSerializer):
         ]
 
 
+class TrainListSerializer(TrainSerializer):
+    train_type = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field="name",
+    )
+
+
 class TrainDetailSerializer(TrainSerializer):
     train_type = TrainTypeSerializer(read_only=True)
 
@@ -60,41 +68,59 @@ class StationSerializer(serializers.ModelSerializer):
 
 
 class RouteSerializer(serializers.ModelSerializer):
-    source_name = serializers.CharField(
-        source="source.name",
-        read_only=True,
-    )
-    destination_name = serializers.CharField(
-        source="destination.name",
-        read_only=True,
-    )
-
     class Meta:
         model = Route
         fields = [
             "id",
             "source",
-            "source_name",
             "destination",
-            "destination_name",
             "distance",
         ]
 
 
-class OrderSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Order
-        fields = [
-            "id",
-            "created_at",
-        ]
-        read_only_fields = [
-            "id",
-            "created_at",
-        ]
+class RouteListSerializer(RouteSerializer):
+    source = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field="name",
+    )
+    destination = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field="name",
+    )
+
+
+class RouteDetailSerializer(RouteSerializer):
+    source = StationSerializer(read_only=True)
+    destination = StationSerializer(read_only=True)
 
 
 class TicketSerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        journey = attrs["journey"]
+        train = journey.train
+
+        if attrs["cargo"] > train.cargo_num:
+            raise serializers.ValidationError(
+                {
+                    "cargo": (
+                        f"Cargo number must be between "
+                        f"1 and {train.cargo_num}."
+                    )
+                }
+            )
+
+        if attrs["seat"] > train.places_in_cargo:
+            raise serializers.ValidationError(
+                {
+                    "seat": (
+                        f"Seat number must be between "
+                        f"1 and {train.places_in_cargo}."
+                    )
+                }
+            )
+
+        return attrs
+
     class Meta:
         model = Ticket
         fields = [
@@ -102,7 +128,6 @@ class TicketSerializer(serializers.ModelSerializer):
             "cargo",
             "seat",
             "journey",
-            "order"
         ]
 
         validators = [
@@ -118,31 +143,67 @@ class TicketSerializer(serializers.ModelSerializer):
 
 
 class JourneySerializer(serializers.ModelSerializer):
-    train_name = serializers.CharField(
-        source="train.name",
-        read_only=True,
-    )
-
     class Meta:
         model = Journey
         fields = [
             "id",
             "route",
             "train",
-            "train_name",
             "departure_time",
             "arrival_time",
             "crew",
         ]
 
 
-class TicketDetailSerializer(TicketSerializer):
+class JourneyListSerializer(JourneySerializer):
+    route = RouteListSerializer(read_only=True)
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    tickets = TicketSerializer(many=True, read_only=False, allow_empty=False)
+
+    class Meta:
+        model = Order
+        fields = ["id", "tickets", "created_at"]
+
+
+    def validate(self, attrs):
+        tickets = attrs.get("tickets", [])
+
+        ticket_places = [
+            (
+            ticket["journey"].id,
+            ticket["cargo"],
+            ticket["seat"],
+
+            ) for ticket in tickets]
+
+        if len(ticket_places) != len(set(ticket_places)):
+            raise serializers.ValidationError(
+                {"tickets": "Duplicate tickets are not allowed."}
+            )
+        return attrs
+
+
+    def create(self, validated_data):
+        with transaction.atomic():
+            tickets_data = validated_data.pop("tickets")
+            order = Order.objects.create(**validated_data)
+            for ticket_data in tickets_data:
+                Ticket.objects.create(order=order, **ticket_data)
+            return order
+
+
+class TicketListSerializer(TicketSerializer):
     journey = JourneySerializer(read_only=True)
-    order = OrderSerializer(read_only=True)
+
+
+class OrderListSerializer(OrderSerializer):
+    tickets = TicketListSerializer(many=True,read_only=True)
 
 
 class JourneyDetailSerializer(JourneySerializer):
-    route = RouteSerializer(read_only=True)
+    route = RouteDetailSerializer(read_only=True)
     train = TrainDetailSerializer(read_only=True)
     crew = serializers.StringRelatedField(
         many=True,
