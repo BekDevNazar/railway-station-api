@@ -2,6 +2,8 @@ from rest_framework import viewsets, mixins
 
 from railway.models import TrainType, Crew, Station, Route, Train, Journey, Order, Ticket
 from rest_framework.permissions import IsAuthenticated
+
+from railway.permissions import IsAdminOrAuthenticatedReadOnly
 from railway.serializers import (
     TrainTypeSerializer,
     CrewSerializer,
@@ -23,16 +25,19 @@ from railway.serializers import (
 class TrainTypeViewSet(viewsets.ModelViewSet):
     queryset = TrainType.objects.all()
     serializer_class = TrainTypeSerializer
+    permission_classes = (IsAdminOrAuthenticatedReadOnly,)
 
 
 class CrewViewSet(viewsets.ModelViewSet):
     queryset = Crew.objects.all()
     serializer_class = CrewSerializer
+    permission_classes = (IsAdminOrAuthenticatedReadOnly,)
 
 
 class StationViewSet(viewsets.ModelViewSet):
     queryset = Station.objects.all()
     serializer_class = StationSerializer
+    permission_classes = (IsAdminOrAuthenticatedReadOnly,)
 
 
 class RouteViewSet(viewsets.ModelViewSet):
@@ -40,6 +45,7 @@ class RouteViewSet(viewsets.ModelViewSet):
         "source",
         "destination"
         )
+    permission_classes = (IsAdminOrAuthenticatedReadOnly,)
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -53,6 +59,7 @@ class RouteViewSet(viewsets.ModelViewSet):
 
 class TrainViewSet(viewsets.ModelViewSet):
     queryset = Train.objects.all()
+    permission_classes = (IsAdminOrAuthenticatedReadOnly,)
 
     def get_queryset(self):
         queryset = self.queryset
@@ -72,6 +79,7 @@ class TrainViewSet(viewsets.ModelViewSet):
 
 class JourneyViewSet(viewsets.ModelViewSet):
     queryset = Journey.objects.select_related("train")
+    permission_classes = (IsAdminOrAuthenticatedReadOnly,)
 
     def get_queryset(self):
         queryset = self.queryset
