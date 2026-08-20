@@ -1,6 +1,6 @@
 from rest_framework import viewsets, mixins
 
-from railway.models import TrainType, Crew, Station, Route, Train, Journey, Order, Ticket
+from railway.models import TrainType, Crew, Station, Route, Train, Journey, Order
 from rest_framework.permissions import IsAuthenticated
 
 from railway.permissions import IsAdminOrAuthenticatedReadOnly
@@ -78,11 +78,23 @@ class TrainViewSet(viewsets.ModelViewSet):
 
 
 class JourneyViewSet(viewsets.ModelViewSet):
-    queryset = Journey.objects.select_related("train")
+    queryset = Journey.objects.all()
     permission_classes = (IsAdminOrAuthenticatedReadOnly,)
 
     def get_queryset(self):
         queryset = self.queryset
+        date = self.request.query_params.get("date")
+        source = self.request.query_params.get("source")
+        destination = self.request.query_params.get("destination")
+
+        if date:
+            queryset = queryset.filter(departure_time__date=date)
+
+        if source:
+            queryset = queryset.filter(route__source__name__icontains=source)
+
+        if destination:
+            queryset = queryset.filter(route__destination__name__icontains=destination)
 
         if self.action == "list":
             queryset = queryset.select_related(
