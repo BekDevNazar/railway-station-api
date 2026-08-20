@@ -68,6 +68,27 @@ class StationSerializer(serializers.ModelSerializer):
 
 
 class RouteSerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        source = attrs.get(
+            "source",
+            getattr(self.instance, "source", None),
+        )
+        destination = attrs.get(
+            "destination",
+            getattr(self.instance, "destination", None),
+        )
+
+        if source == destination:
+            raise serializers.ValidationError(
+                {
+                    "destination": (
+                        "Source and destination must be different."
+                    )
+                }
+            )
+
+        return attrs
+
     class Meta:
         model = Route
         fields = [
@@ -143,6 +164,31 @@ class TicketSerializer(serializers.ModelSerializer):
 
 
 class JourneySerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        departure_time = attrs.get(
+            "departure_time",
+            getattr(self.instance, "departure_time", None),
+        )
+        arrival_time = attrs.get(
+            "arrival_time",
+            getattr(self.instance, "arrival_time", None),
+        )
+
+        if (
+                departure_time
+                and arrival_time
+                and arrival_time <= departure_time
+        ):
+            raise serializers.ValidationError(
+                {
+                    "arrival_time": (
+                        "Arrival time must be later than departure time."
+                    )
+                }
+            )
+
+        return attrs
+    
     class Meta:
         model = Journey
         fields = [

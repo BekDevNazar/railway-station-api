@@ -2,10 +2,22 @@ from rest_framework import viewsets, mixins
 
 from railway.models import TrainType, Crew, Station, Route, Train, Journey, Order, Ticket
 from rest_framework.permissions import IsAuthenticated
-from railway.serializers import TrainTypeSerializer, CrewSerializer, StationSerializer, RouteDetailSerializer, \
-    RouteSerializer, TrainDetailSerializer, TrainSerializer, JourneyDetailSerializer, JourneySerializer, \
-    OrderSerializer, RouteListSerializer, TrainListSerializer, JourneyListSerializer, TicketListSerializer, \
-    TicketSerializer, OrderListSerializer
+from railway.serializers import (
+    TrainTypeSerializer,
+    CrewSerializer,
+    StationSerializer,
+    RouteDetailSerializer,
+    RouteSerializer,
+    TrainDetailSerializer,
+    TrainSerializer,
+    JourneyDetailSerializer,
+    JourneySerializer,
+    OrderSerializer,
+    RouteListSerializer,
+    TrainListSerializer,
+    JourneyListSerializer,
+    OrderListSerializer,
+)
 
 
 class TrainTypeViewSet(viewsets.ModelViewSet):
