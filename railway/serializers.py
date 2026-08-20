@@ -201,12 +201,25 @@ class JourneySerializer(serializers.ModelSerializer):
         ]
 
 
-class JourneyListSerializer(JourneySerializer):
+class JourneyListSerializer(serializers.ModelSerializer):
     route = RouteListSerializer(read_only=True)
+    tickets_available = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Journey
+        fields = [
+            "id",
+            "route",
+            "train",
+            "departure_time",
+            "arrival_time",
+            "crew",
+            "tickets_available",
+        ]
 
 
 class OrderSerializer(serializers.ModelSerializer):
-    tickets = TicketSerializer(many=True, read_only=False, allow_empty=False)
+    tickets = TicketSerializer(many=True, allow_empty=False)
 
     class Meta:
         model = Order
@@ -248,10 +261,36 @@ class OrderListSerializer(OrderSerializer):
     tickets = TicketListSerializer(many=True,read_only=True)
 
 
-class JourneyDetailSerializer(JourneySerializer):
+class TicketPlacesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Ticket
+        fields = [
+            "cargo",
+            "seat"
+        ]
+
+
+class JourneyDetailSerializer(serializers.ModelSerializer):
     route = RouteDetailSerializer(read_only=True)
     train = TrainDetailSerializer(read_only=True)
     crew = serializers.StringRelatedField(
         many=True,
         read_only=True,
     )
+    taken_places = TicketPlacesSerializer(
+        source="tickets",
+        many=True,
+        read_only=True
+    )
+
+    class Meta:
+        model = Journey
+        fields = [
+            "id",
+            "route",
+            "train",
+            "departure_time",
+            "arrival_time",
+            "crew",
+            "taken_places",
+        ]

@@ -1,3 +1,4 @@
+from django.db.models import F, Count
 from rest_framework import viewsets, mixins
 
 from railway.models import TrainType, Crew, Station, Route, Train, Journey, Order
@@ -97,17 +98,28 @@ class JourneyViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(route__destination__name__icontains=destination)
 
         if self.action == "list":
-            queryset = queryset.select_related(
-                "route__source",
-                "route__destination",
-            ).prefetch_related("crew")
+            queryset = (
+                queryset
+                .select_related(
+                    "route__source",
+                    "route__destination",
+                )
+                .prefetch_related("crew")
+                .annotate(
+                    tickets_available=(
+                            F("train__cargo_num")
+                            * F("train__places_in_cargo")
+                            - Count("tickets")
+                    )
+                )
+            )
 
         if self.action == "retrieve":
             queryset = queryset.select_related(
                 "route__source",
                 "route__destination",
                 "train__train_type",
-            ).prefetch_related("crew")
+            ).prefetch_related("crew", "tickets")
 
         return queryset
 
