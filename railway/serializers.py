@@ -294,3 +294,12 @@ class JourneyDetailSerializer(serializers.ModelSerializer):
             "crew",
             "taken_places",
         ]
+
+
+class TrainImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Train
+        fields = [
+            "id",
+            "image"
+        ]

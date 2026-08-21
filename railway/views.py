@@ -1,8 +1,11 @@
 from django.db.models import F, Count
-from rest_framework import viewsets, mixins
+from rest_framework import viewsets, mixins, status
+from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.response import Response
 
 from railway.models import TrainType, Crew, Station, Route, Train, Journey, Order
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
 from railway.permissions import IsAdminOrAuthenticatedReadOnly
 from railway.serializers import (
@@ -19,7 +22,7 @@ from railway.serializers import (
     RouteListSerializer,
     TrainListSerializer,
     JourneyListSerializer,
-    OrderListSerializer,
+    OrderListSerializer, TrainImageSerializer,
 )
 
 
@@ -75,7 +78,27 @@ class TrainViewSet(viewsets.ModelViewSet):
         if self.action == "retrieve":
             return TrainDetailSerializer
 
+        if self.action == "upload_file":
+            return TrainImageSerializer
+
         return TrainSerializer
+
+    @action(
+        methods=["POST"],
+        detail=True,
+        url_path="upload-image",
+        permission_classes=[IsAdminUser],
+    )
+    def upload_file(self, request, pk=None):
+        train = self.get_object()
+        serializers = self.get_serializer(train, data=request.data)
+        if serializers.is_valid():
+            serializers.save()
+            return Response(
+                serializers.data,
+                status=status.HTTP_200_OK)
+        return Response(serializers.errors,
+                        status=status.HTTP_400_BAD_REQUEST)
 
 
 class JourneyViewSet(viewsets.ModelViewSet):
@@ -133,10 +156,16 @@ class JourneyViewSet(viewsets.ModelViewSet):
         return JourneySerializer
 
 
+class OrderPagination(PageNumberPagination):
+    page_size = 10
+    max_page_size = 100
+
+
 class OrderViewSet(viewsets.GenericViewSet,
                    mixins.ListModelMixin,
                    mixins.CreateModelMixin):
     permission_classes = (IsAuthenticated,)
+    pagination_class = OrderPagination
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -144,7 +173,11 @@ class OrderViewSet(viewsets.GenericViewSet,
         return OrderSerializer
 
     def get_queryset(self):
-        return Order.objects.filter(user=self.request.user)
+        queryset = Order.objects.filter(user=self.request.user)
+
+        if self.action == "list":
+            queryset = queryset.prefetch_related("tickets__journey__crew")
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
