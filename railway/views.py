@@ -173,7 +173,8 @@ class OrderViewSet(viewsets.GenericViewSet,
         return OrderSerializer
 
     def get_queryset(self):
-        queryset = Order.objects.filter(user=self.request.user)
+        queryset = (Order.objects.filter(user=self.request.user)
+                    .order_by("-created_at"))
 
         if self.action == "list":
             queryset = queryset.prefetch_related("tickets__journey__crew")
