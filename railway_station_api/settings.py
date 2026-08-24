@@ -21,10 +21,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-$t-kf#1h_5i+)j)23a10u77-4(mg))^t(_nk#!#522cblbkxs#'
+SECRET_KEY = os.environ["SECRET_KEY"]
 
+DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
 ALLOWED_HOSTS = []
 
