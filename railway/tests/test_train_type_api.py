@@ -8,6 +8,7 @@ from railway.models import Train, TrainType
 
 TRAIN = reverse("railway:train-list")
 
+
 def detail_url(train_id):
     return reverse("railway:train-detail", args=[train_id])
 

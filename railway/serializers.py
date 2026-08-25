@@ -188,7 +188,7 @@ class JourneySerializer(serializers.ModelSerializer):
             )
 
         return attrs
-    
+
     class Meta:
         model = Journey
         fields = [
@@ -225,15 +225,14 @@ class OrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = ["id", "tickets", "created_at"]
 
-
     def validate(self, attrs):
         tickets = attrs.get("tickets", [])
 
         ticket_places = [
             (
-            ticket["journey"].id,
-            ticket["cargo"],
-            ticket["seat"],
+                ticket["journey"].id,
+                ticket["cargo"],
+                ticket["seat"],
 
             ) for ticket in tickets]
 
@@ -242,7 +241,6 @@ class OrderSerializer(serializers.ModelSerializer):
                 {"tickets": "Duplicate tickets are not allowed."}
             )
         return attrs
-
 
     def create(self, validated_data):
         with transaction.atomic():
@@ -258,7 +256,7 @@ class TicketListSerializer(TicketSerializer):
 
 
 class OrderListSerializer(OrderSerializer):
-    tickets = TicketListSerializer(many=True,read_only=True)
+    tickets = TicketListSerializer(many=True, read_only=True)
 
 
 class TicketPlacesSerializer(serializers.ModelSerializer):
